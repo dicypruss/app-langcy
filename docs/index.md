@@ -5,14 +5,24 @@
 - **Changelog**: Move finished tasks (that aren't related to the current active task) to `changelog.md`.
 
 ## What to do with the current task list
-- [x] Run the empty telegram bot that will answer the mirror message (same as user sent to him)
-    - [x] [USER] Create bot in BotFather and get token
-    - [x] [AI] Initialize Node.js project (`npm init -y`)
-    - [x] [AI] Install `telegraf` and `dotenv`
-    - [x] [AI] Create `.env` for token
-    - [x] [AI] Implement echo bot in `index.js`
-    - [x] [AI] Verify locally
-- [ ] Deploy the bot to google cloud
+- [ ] User Onboarding & Content Generation
+    - [ ] Dependencies & Project Structure
+        - [ ] [AI] Install `jest`, `@supabase/supabase-js`, `@google/generative-ai`
+        - [ ] [AI] Create folders: `tests`, `src/core`, `src/shell`
+        - [ ] [AI] Setup Jest configuration
+    - [ ] Functional Core (TDD)
+        - [ ] [AI] Implement `src/core/onboarding.core.js` (validation, prompts)
+        - [ ] [AI] Implement `src/core/content.core.js` (parsing logic)
+        - [ ] [AI] Write Jest tests for core logic
+    - [ ] Shell Implementation & Integration
+        - [ ] [USER] Provide Supabase & Gemini Credentials
+        - [ ] [USER] Run SQL Schema in Supabase
+        - [ ] [AI] Setup Supabase & Gemini clients
+        - [ ] [AI] Implement Telegraf WizardScene for Onboarding
+        - [ ] [AI] Integrate "Generate 100 Words" flow
+    - [ ] Verification
+        - [ ] [AI] Run `npm test`
+        - [ ] [AI] Manual flow verification
 
 ## Current Focus
-- Basic Bot Implementation (Echo Bot)
+- User Onboarding & Content Generation
