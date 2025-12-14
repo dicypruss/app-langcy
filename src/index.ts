@@ -1,28 +1,32 @@
 import 'dotenv/config';
-import { Telegraf, Context } from 'telegraf';
+import { Telegraf, Scenes, session } from 'telegraf';
+import { onboardingScene } from './shell/scenes/onboarding';
+import { runMigrations } from './shell/migrator';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
     throw new Error('TELEGRAM_BOT_TOKEN must be provided!');
 }
 
-const bot = new Telegraf<Context>(token);
+const bot = new Telegraf<Scenes.WizardContext>(token);
+const stage = new Scenes.Stage<Scenes.WizardContext>([onboardingScene]);
 
-bot.start((ctx) => ctx.reply('Welcome! I will echo whatever you say.'));
-bot.help((ctx) => ctx.reply('Send me a message and I will echo it back.'));
+bot.use(session());
+bot.use(stage.middleware());
 
-bot.on('text', (ctx) => {
-    // Mirror the message - using type narrowing implicitly handled by Telegraf filters usually, 
-    // but explicit access might need checking. 'text' filter guarantees message.text exist.
-    if ('text' in ctx.message) {
-        ctx.reply(ctx.message.text);
-    }
-});
+bot.start((ctx) => ctx.scene.enter('onboarding-wizard'));
+bot.help((ctx) => ctx.reply('Send /start to begin onboarding.'));
 
-bot.launch();
+// Startup function
+async function start() {
+    await runMigrations();
 
-// Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+    bot.launch();
+    console.log('Bot is running...');
 
-console.log('Bot is running...');
+    // Enable graceful stop
+    process.once('SIGINT', () => bot.stop('SIGINT'));
+    process.once('SIGTERM', () => bot.stop('SIGTERM'));
+}
+
+start();

@@ -24,9 +24,19 @@ The bot sends assignments and exercises to the user during the day in test form,
     npm install
     ```
 
-3.  Create a `.env` file in the root directory and add your Telegram Bot Token:
+### Prerequisites
+- Node.js (v18+)
+- Telegram Bot Token
+- PostgreSQL Database ([Setup Guide](docs/database_setup.md))
+- Google Gemini API Key ([Get it here](https://aistudio.google.com/app/apikey))
+
+3.  Create a `.env` file in the root directory and add your Telegram Bot Token, Database URL, and Google Gemini API Key:
     ```text
     TELEGRAM_BOT_TOKEN=your_token_here
+    DATABASE_URL=postgresql://user:password@host:5432/db
+    GEMINI_API_KEY=your_key_here
+    SUPABASE_URL=your_supabase_url (required if using Supabase client)
+    SUPABASE_KEY=your_supabase_key (required if using Supabase client)
     ```
 
 4.  Start the bot:
