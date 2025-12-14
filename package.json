@@ -1,0 +1,27 @@
+{
+  "name": "app-langcy",
+  "version": "1.0.0",
+  "description": "A Telegram bot designed to help users learn languages through daily interactive exercises, similar to Duolingo but within the Telegram interface.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dicypruss/app-langcy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dicypruss/app-langcy/issues"
+  },
+  "homepage": "https://github.com/dicypruss/app-langcy#readme",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "telegraf": "^4.16.3"
+  }
+}
