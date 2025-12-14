@@ -5,6 +5,12 @@
 - **Changelog**: Move finished tasks (that aren't related to the current active task) to `changelog.md`.
 
 ## What to do with the current task list
+- [ ] TypeScript Migration
+    - [ ] [AI] Install TypeScript & types
+    - [ ] [AI] Configure `tsconfig.json`
+    - [ ] [AI] Convert `index.js` to `src/index.ts`
+    - [ ] [AI] Update `package.json` scripts
+    - [ ] [AI] Verify Echo Bot logic
 - [ ] User Onboarding & Content Generation
     - [ ] Dependencies & Project Structure
         - [ ] [AI] Install `jest`, `@supabase/supabase-js`, `@google/generative-ai`
