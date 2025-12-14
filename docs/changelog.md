@@ -9,6 +9,12 @@
 - [x] [AI] Update `package.json` scripts
 - [x] [AI] Verify Echo Bot logic
 
+### User Onboarding & Content Generation
+- [x] Dependencies & Project Structure
+- [x] Functional Core (TDD)
+- [x] Shell Implementation (Telegraf + Supabase + Gemini)
+- [x] Verification (Automated & Manual)
+
 ### Basic Bot Implementation (Echo Bot)
 - [x] [USER] Create bot in BotFather and get token
 - [x] [AI] Initialize Node.js project (`npm init -y`)
