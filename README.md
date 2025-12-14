@@ -31,7 +31,7 @@ The bot sends assignments and exercises to the user during the day in test form,
 
 4.  Start the bot:
     ```bash
-    node index.js
+    npm start
     ```
 
 5.  Open your bot in Telegram and send `/start`. It should reply with a welcome message. Send any text to see it echoed back.

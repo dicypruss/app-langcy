@@ -2,6 +2,13 @@
 
 ## 2025-12-14
 
+### TypeScript Migration
+- [x] [AI] Install TypeScript & types
+- [x] [AI] Configure `tsconfig.json`
+- [x] [AI] Convert `index.js` to `src/index.ts`
+- [x] [AI] Update `package.json` scripts
+- [x] [AI] Verify Echo Bot logic
+
 ### Basic Bot Implementation (Echo Bot)
 - [x] [USER] Create bot in BotFather and get token
 - [x] [AI] Initialize Node.js project (`npm init -y`)
