@@ -18,6 +18,8 @@ export interface Word {
     id: number;
     original: string;
     translation: string;
+    context_target?: string;
+    context_native?: string;
     [key: string]: any;
 }
 
@@ -42,7 +44,12 @@ export function generateOptionsTask(target: Word, distractors: Word[]): Task {
     }
 
     // 3. Extract translation strings
-    const optionStrings = optionsPool.map(w => w.translation);
+    const optionStrings = optionsPool.map(w => {
+        if (w.context_native) {
+            return `${w.translation} (${w.context_native})`;
+        }
+        return w.translation;
+    });
 
     return {
         type: TaskType.CHOOSE_OPTION,

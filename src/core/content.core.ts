@@ -2,6 +2,7 @@ export interface WordEntry {
     original: string;
     translation: string;
     context_sentence: string;
+    context_native?: string; // Optional because legacy data/prompt might not have it
 }
 
 /**
@@ -39,6 +40,7 @@ export function parseGeminiResponse(responseText: string): WordEntry[] {
     }).map((entry: any) => ({
         original: entry.original,
         translation: entry.translation,
-        context_sentence: entry.context_sentence
+        context_sentence: entry.context_sentence,
+        context_native: entry.context_native
     }));
 }

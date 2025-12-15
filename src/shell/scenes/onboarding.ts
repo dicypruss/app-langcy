@@ -77,12 +77,22 @@ export const onboardingScene = new Scenes.WizardScene<Scenes.WizardContext>(
             // 2. Generate Words using Gemini
             const words = await GeminiService.generateInitialWords(nativeLang, targetLang);
 
+            // 2.5 Deduplicate words locally (case-insensitive) to prevent unique constraint violation
+            const seenWords = new Set<string>();
+            const uniqueWords = words.filter(w => {
+                const normalized = w.original.toLowerCase().trim();
+                if (seenWords.has(normalized)) return false;
+                seenWords.add(normalized);
+                return true;
+            });
+
             // 3. Insert words into Supabase
-            const wordsToInsert = words.map(w => ({
+            const wordsToInsert = uniqueWords.map(w => ({
                 user_id: user.id, // DB id, not telegram_id
                 original: w.original,
                 translation: w.translation,
-                context_sentence: w.context_sentence,
+                context_target: w.context_sentence,
+                context_native: w.context_native,
                 status: 'new'
             }));
 
@@ -97,8 +107,9 @@ export const onboardingScene = new Scenes.WizardScene<Scenes.WizardContext>(
             if (insertedWords && insertedWords.length > 0) {
                 const progressToInsert = insertedWords.map(w => ({
                     user_id: user.id,
-                    unit_id: w.id,
-                    unit_type: 'word',
+                    word_id: w.id, // Explicitly set word_id for exclusive arc
+                    // unit_id: w.id, removed
+                    // unit_type: 'word', removed (not in table anymore if we dropped it? wait, migration kept unit_type but added check?)
                     confidence: 0,
                     streak: 0,
                     interval: 0,

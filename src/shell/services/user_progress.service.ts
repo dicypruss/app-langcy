@@ -34,10 +34,11 @@ export class UserProgressService {
 
             // Nested objects Reconstructed
             word: {
-                id: row.unit_id, // For words, unit_id IS the word id
+                id: row.unit_id,
                 original: row.word_original,
                 translation: row.word_translation,
-                context_sentence: row.word_context
+                context_target: row.word_context_target,
+                context_native: row.word_context_native
             },
             telegram_user: {
                 id: row.user_id,
@@ -59,7 +60,14 @@ export class UserProgressService {
                 next_review_at: updates.nextReviewAt.toISOString(),
                 updated_at: new Date().toISOString()
             })
-            .match({ user_id: userId, unit_id: unitId, unit_type: unitType });
+
+            // Dynamic match based on unit type
+            .match({
+                user_id: userId,
+                ...(unitType === 'word' ? { word_id: unitId } :
+                    unitType === 'phrase' ? { phrase_id: unitId } :
+                        { dialog_id: unitId })
+            });
 
         if (error) throw error;
     }

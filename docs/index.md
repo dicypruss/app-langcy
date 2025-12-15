@@ -9,9 +9,9 @@
 
 ## Upcoming Tasks
 - [ ] **Phase 2: Visual Learning & Context** (Image Import)
-    - [ ] **Schema Updates**:
-        - [ ] Add `context_native` column to `words` table.
-        - [ ] Rename/Alias `context_sentence` to `context_target`.
+    - [x] **Schema Updates**:
+        - [x] Add `context_native` column to `words` table.
+        - [x] Rename/Alias `context_sentence` to `context_target`.
     - [ ] **Image Processing Flow**:
         - [ ] Handle photo messages in `index.ts`.
         - [ ] Busy Check: Reject/Warn if user has pending task.
@@ -21,9 +21,13 @@
         - [ ] Extract preliminary learning units.
         - [ ] Dedup Logic: Check against DB, refine list if duplicates exist.
         - [ ] Finalize list with bilingual contexts.
-    - [ ] **UI Updates**:
-        - [ ] Show `context_native` in Task Options.
-        - [ ] Show `context_target` in Answer Feedback.
+    - [x] **UI Updates**:
+        - [x] Show `context_native` in Task Options.
+        - [x] Show `context_target` in Answer Feedback.
+    - [ ] **Bi-Directional Learning**:
+        - [ ] Support Native -> Target questions.
+        - [ ] Support Target -> Native questions (current).
+        - [ ] Randomize/Balance direction in Scheduler.
 - [ ] **Phase 3: Audio & UI Polish** (See `roadmap.md`)
 
 ## Production Readiness (Technical Debt)

@@ -68,7 +68,11 @@ export class InteractionService {
             console.log(`[Interaction] ℹ️ Answer "${answer}" treated as raw text (legacy or direct input).`);
         }
 
-        const isCorrectCheck = word.translation === finalAnswer;
+        const expectedAnswer = word.context_native
+            ? `${word.translation} (${word.context_native})`
+            : word.translation;
+
+        const isCorrectCheck = expectedAnswer === finalAnswer;
         console.log(`[Interaction] 📝 Answer: "${finalAnswer}", Correct: ${isCorrectCheck}`);
 
         // Wrap in try-finally to ensure lock is released
@@ -78,7 +82,8 @@ export class InteractionService {
             const { data: progress, error: progressError } = await supabase
                 .from('user_progress')
                 .select('*')
-                .match({ user_id: userId, unit_id: wordId, unit_type: 'word' })
+                // Exclusive Arc: match on word_id directly
+                .match({ user_id: userId, word_id: wordId })
                 .single();
 
             if (progressError || !progress) {
@@ -100,14 +105,15 @@ export class InteractionService {
             await UserProgressService.updateProgress(userId, wordId, 'word', srsResult);
 
             // 5. Feedback to User
+            const contextMsg = word.context_target ? `\n📖 ${word.context_target}` : '';
             if (isCorrectCheck) {
-                let msg = `✅ Correct! ${word.original} = ${word.translation}`;
+                let msg = `✅ Correct! ${word.original} = ${word.translation}${contextMsg}\nYou chose: ${finalAnswer}`;
                 if (srsResult.streak >= 10) {
                     msg += '\n\n🎓 You mastered this word! Great job!';
                 }
                 await ctx.editMessageText(msg);
             } else {
-                await ctx.editMessageText(`❌ Wrong! ${word.original} = ${word.translation}\nYou chose: ${answer}`);
+                await ctx.editMessageText(`❌ Wrong! ${word.original} = ${word.translation}${contextMsg}\nYou chose: ${finalAnswer}`);
             }
             console.log(`[Interaction] ✅ Answer processed successfully.`);
 

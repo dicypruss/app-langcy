@@ -26,7 +26,7 @@ export class StateService {
 
         return {
             isBusy: data?.is_busy || false,
-            options: data?.last_options || [],
+            options: data?.options || [],
             messageId: data?.last_message_id,
             chatId: data?.last_message_chat_id
         };
@@ -48,7 +48,7 @@ export class StateService {
         // We removed shouldLock.
         if ((state as any).shouldLock !== undefined) updates.is_busy = (state as any).shouldLock;
 
-        if (state.options !== undefined) updates.last_options = state.options;
+        if (state.options !== undefined) updates.options = state.options;
         if (state.messageId !== undefined) updates.last_message_id = state.messageId;
         if (state.chatId !== undefined) updates.last_message_chat_id = state.chatId;
 

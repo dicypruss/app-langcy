@@ -33,9 +33,10 @@ export function generateWordListPrompt(nativeLang: string, targetLang: string): 
             properties: {
                 original: { type: SchemaType.STRING, description: `The word in ${targetLang}` },
                 translation: { type: SchemaType.STRING, description: `The translation in ${nativeLang}` },
-                context_sentence: { type: SchemaType.STRING, description: `A simple example sentence using the word in ${targetLang}` }
+                context_sentence: { type: SchemaType.STRING, description: `A simple example sentence using the word in ${targetLang}` },
+                context_native: { type: SchemaType.STRING, description: `The translation of the context sentence in ${nativeLang}` }
             },
-            required: ["original", "translation", "context_sentence"]
+            required: ["original", "translation", "context_sentence", "context_native"]
         }
     };
 

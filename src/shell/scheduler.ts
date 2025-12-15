@@ -130,11 +130,8 @@ export class SchedulerService {
         // Send
         return await this.bot.telegram.sendMessage(userId, task.question, Markup.inlineKeyboard(
             // Chunk into rows of 2
-            buttons.reduce((all: any[], one: any, i: number) => {
-                const ch = Math.floor(i / 2);
-                all[ch] = [].concat((all[ch] || []), one);
-                return all;
-            }, [])
+            // Chunk into rows of 1 (Vertical layout)
+            buttons.map((btn: any) => [btn])
         ));
     }
 

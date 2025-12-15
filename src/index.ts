@@ -24,7 +24,11 @@ bot.action(/^ans:(\d+):(.+)$/, async (ctx) => {
     const wordId = parseInt(ctx.match[1]);
     const answer = ctx.match[2];
     await InteractionService.handleTaskAnswer(ctx, wordId, answer);
-    await ctx.answerCbQuery();
+    try {
+        await ctx.answerCbQuery();
+    } catch (e) {
+        console.warn('⚠️ Failed to answer callback query:', e);
+    }
 });
 
 
@@ -36,6 +40,9 @@ import { SchedulerService } from './shell/scheduler';
 // Startup function
 async function start() {
     await runMigrations();
+    // Allow PostgREST schema cache to reload
+    console.log('⏳ Waiting for schema cache reload...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     const scheduler = new SchedulerService(bot);
     scheduler.start();
