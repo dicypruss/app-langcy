@@ -1,14 +1,15 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { generateWordListPrompt } from '../core/onboarding.core';
+import { config } from '../config';
 import { parseGeminiResponse, WordEntry } from '../core/content.core';
 
-const apiKey = process.env.GEMINI_API_KEY;
+const apiKey = config.geminiKey;
 
 if (!apiKey) {
     throw new Error('Missing GEMINI_API_KEY environment variable');
 }
 
-const genAI = new GoogleGenerativeAI(apiKey);
+const genAI = new GoogleGenerativeAI(config.geminiKey);
 const model = genAI.getGenerativeModel({
     model: 'gemini-2.5-flash',
 });

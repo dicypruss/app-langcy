@@ -1,9 +1,11 @@
 import { Client } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
+import { config } from '../config';
 
 export async function runMigrations() {
-    const dbUrl = process.env.DATABASE_URL;
+    console.log('🚀 Running migrations...');
+    const dbUrl = config.databaseUrl;
     if (!dbUrl) {
         console.warn('⚠️  DATABASE_URL not found. Skipping migrations. Functionality involving database will fail.');
         return;
@@ -60,8 +62,9 @@ export async function runMigrations() {
             }
         }
 
-        console.log('✨ Database migrations up to date.');
-
+        // Notify PostgREST to reload schema cache
+        await client.query("NOTIFY pgrst, 'reload schema'");
+        console.log('✨ Database migrations up to date (Schema cache reloaded).');
     } catch (err) {
         console.error('Migration error:', err);
         // We might want to exit process if migrations fail

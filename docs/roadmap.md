@@ -31,24 +31,12 @@ The engine that schedules when a unit should be reviewed.
 
 ### Phase 1: Words Learning Loop (SRS MVP)
 **Goal**: Implement the full learning lifecycle for **Words** only.
-- [ ] **Schema Migration**:
-    -   Create `user_progress` table: Links `user_id` + `unit_id` (word_id) with SRS data (`next_review_at`, `interval`, `confidence`, `streak`).
-- [ ] **Task Engine (Words)**:
-    -   Type: "Choose the Right Option" (show word, 3-4 translation options).
-    -   Logic to generate distractors (wrong answers) dynamically or via Gemini.
-- [ ] **Spaced Repetition System (SRS)**:
-    -   **Scheduler**: Background process (cron/poller) to find units where `next_review_at <= NOW()`.
-        -   *Check*: If user has a pending task, skip sending.
-    -   **Algorithm**:
-        -   Lower confidence -> Repeat earlier.
-        -   Higher confidence -> Postpone.
-        -   **Streak Logic**: If `streak >= 10`, mark as "Learned" (stop generating tasks).
-- [ ] **Interaction**:
-    -   Send Task to User -> Wait for Answer.
-    -   **Feedback Loop**:
-        -   If Correct: Increment streak, increase confidence, schedule next review (longer interval).
-        -   If Wrong: Reset/Decrease streak, decrease confidence, schedule next review (shorter interval).
-        -   Update `user_progress` immediately.
+- [x] **Status**: **Complete** (See `changelog.md` for details)
+- [x] **Core Features**:
+    - `user_progress` schema & migration.
+    - "Choose the Right Option" task type.
+    - SRS Scheduler with "One Task" locking & persistence.
+    - Interaction flow with feedback & graduation.
 
 ### Phase 2: Content Expansion (Phrases & Dialogs)
 **Goal**: Add "Set Phrases" and "Dialogs" unit types.
@@ -65,6 +53,10 @@ The engine that schedules when a unit should be reviewed.
 ### Phase 3: Advanced Features
 - [ ] **Manual Review**: Functionality to review "Learned" units on demand.
 - [ ] **Custom Settings**: User-level configuration for SRS intervals.
+
+### Phase 4: Scaling & Reliability
+- [ ] **Scalability**: Move from `setInterval` to a job queue (BullMQ) when user base grows >1k.
+- [ ] **Error Handling**: Integrate centralized logging (Sentry) when creating a stable prod release.
 
 ---
 

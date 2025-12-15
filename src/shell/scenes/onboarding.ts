@@ -86,11 +86,33 @@ export const onboardingScene = new Scenes.WizardScene<Scenes.WizardContext>(
                 status: 'new'
             }));
 
-            const { error: wordsError } = await supabase
+            const { data: insertedWords, error: wordsError } = await supabase
                 .from('words')
-                .insert(wordsToInsert);
+                .insert(wordsToInsert)
+                .select();
 
             if (wordsError) throw new Error(`Supabase Words Error: ${wordsError.message}`);
+
+            // 4. Initialize User Progress (SRS)
+            if (insertedWords && insertedWords.length > 0) {
+                const progressToInsert = insertedWords.map(w => ({
+                    user_id: user.id,
+                    unit_id: w.id,
+                    unit_type: 'word',
+                    confidence: 0,
+                    streak: 0,
+                    interval: 0,
+                    next_review_at: new Date().toISOString() // Due immediately
+                }));
+
+                const { error: progressError } = await supabase
+                    .from('user_progress')
+                    .insert(progressToInsert);
+
+                if (progressError) throw new Error(`Supabase Progress Error: ${progressError.message}`);
+            }
+
+
 
             await ctx.reply('All set! 🎉\n\nI have generated your first 100 words. I will start sending them to you soon.\n\nType /start_learning to begin right away!');
 
