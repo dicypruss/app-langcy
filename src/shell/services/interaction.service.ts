@@ -4,6 +4,7 @@ import { calculateNextReview } from '../../core/srs.core';
 import { UserProgressService } from './user_progress.service';
 import { StateService } from '../state';
 import { config } from '../../config';
+import { highlightTargetInContext } from '../../utils/string.utils';
 
 export class InteractionService {
 
@@ -54,66 +55,81 @@ export class InteractionService {
 
         // Handle index-based answer (if answer is a number index)
         // Check if answer looks like an index (single digit? or check state first)
-        // With new logic, answer passed here is actually the index string (e.g. "0", "1")
-        // We need to resolve it.
 
         let finalAnswer = answer;
         const state = await StateService.get(userId);
 
+        // Parse Options & Direction from State
+        let optionsList: string[] = [];
+        let direction = 'target->native';
+
+        if (Array.isArray(state?.options)) {
+            optionsList = state.options;
+        } else if (state?.options?.items) {
+            optionsList = state.options.items;
+            direction = state.options.direction || 'target->native';
+        }
+
         const answerIndex = parseInt(answer);
-        if (!isNaN(answerIndex) && state?.options && state.options[answerIndex]) {
-            finalAnswer = state.options[answerIndex];
+        if (!isNaN(answerIndex) && optionsList[answerIndex]) {
+            finalAnswer = optionsList[answerIndex];
             console.log(`[Interaction] 🔢 Resolved index ${answerIndex} to "${finalAnswer}"`);
         } else {
             console.log(`[Interaction] ℹ️ Answer "${answer}" treated as raw text (legacy or direct input).`);
         }
 
-        const expectedAnswer = word.context_native
-            ? `${word.translation} (${word.context_native})`
-            : word.translation;
+        // Determine Expected Answer based on Direction
+        let isCorrectCheck = false;
+        if (direction === 'native->target') {
+            // Question: Translation ("Gato") -> Answer: Original ("Cat")
+            // correct answer is exactly target.original
+            isCorrectCheck = finalAnswer === word.original;
+        } else {
+            // Question: Original ("Cat") -> Answer: Translation ("Gato (Context)")
+            const expectedAnswer = word.context_native
+                ? `${word.translation} (${word.context_native})`
+                : word.translation;
+            isCorrectCheck = expectedAnswer === finalAnswer;
+        }
 
-        const isCorrectCheck = expectedAnswer === finalAnswer;
-        console.log(`[Interaction] 📝 Answer: "${finalAnswer}", Correct: ${isCorrectCheck}`);
+        console.log(`[Interaction] 📝 Dir: ${direction}, Answer: "${finalAnswer}", Correct: ${isCorrectCheck}`);
 
         // Wrap in try-finally to ensure lock is released
         try {
-            // 2b. Fetch SRS Status
-            console.log(`[Interaction] 🔍 fetching user_progress for user:${userId} word:${wordId}`);
-            const { data: progress, error: progressError } = await supabase
-                .from('user_progress')
-                .select('*')
-                // Exclusive Arc: match on word_id directly
-                .match({ user_id: userId, word_id: wordId })
+            // 2b. Fetch User SRS Settings (Active Mode + Failure Mode)
+            const { data: userSettings, error: userSettingsError } = await supabase
+                .from('users')
+                .select('active_srs_mode, active_failure_mode')
+                .eq('id', userId)
                 .single();
 
-            if (progressError || !progress) {
-                console.error('[Interaction] ❌ Progress fetch error:', progressError);
-                // If progress is missing, we could recreate it, or just fail. 
-                // For now, fail gracefully.
-                await ctx.editMessageText('⚠️ Error: Could not load task progress.');
-                return;
+            // Check for TEST_MODE override
+            let activeMode = userSettings?.active_srs_mode || 'sm2';
+            // If active_failure_mode is NULL/Undefined, default to 'reset' (Global Default)
+            const failureMode = userSettings?.active_failure_mode || 'reset';
+
+            const isTestMode = config.isTestMode;
+            if (isTestMode) {
+                console.log('[Interaction] 🧪 Test Mode detected: Forcing "pimsleur" mode.');
+                activeMode = 'pimsleur';
             }
 
-            // 3. Calculate new SRS state
-            const isTestMode = config.isTestMode;
-            console.log(`[Interaction] 🧮 Calculating SRS. TestMode: ${isTestMode}`);
-            const srsResult = calculateNextReview(progress, isCorrectCheck, isTestMode);
-            console.log(`[Interaction] 📊 New SRS State:`, srsResult);
-
-            // 4. Update DB
-            console.log(`[Interaction] 💾 Updating DB...`);
-            await UserProgressService.updateProgress(userId, wordId, 'word', srsResult);
+            // 4. Update DB (UserProgressService handles multi-algo recalc)
+            console.log(`[Interaction] 💾 Updating DB (Mode: ${activeMode}, FailureMode: ${failureMode})...`);
+            await UserProgressService.updateProgress(userId, wordId, 'word', direction, activeMode, isCorrectCheck, failureMode);
 
             // 5. Feedback to User
-            const contextMsg = word.context_target ? `\n📖 ${word.context_target}` : '';
+            const contextMsg = word.context_target
+                ? `\n📖 ${highlightTargetInContext(word.context_target, word.original)}`
+                : '';
+
+            const options = { parse_mode: 'Markdown' as const };
+
             if (isCorrectCheck) {
-                let msg = `✅ Correct! ${word.original} = ${word.translation}${contextMsg}\nYou chose: ${finalAnswer}`;
-                if (srsResult.streak >= 10) {
-                    msg += '\n\n🎓 You mastered this word! Great job!';
-                }
-                await ctx.editMessageText(msg);
+                let msg = `✅ Correct! *${word.original}* = ${word.translation}${contextMsg}\nYou chose: ${finalAnswer}`;
+                await ctx.editMessageText(msg, options);
             } else {
-                await ctx.editMessageText(`❌ Wrong! ${word.original} = ${word.translation}${contextMsg}\nYou chose: ${finalAnswer}`);
+                await ctx.editMessageText(`❌ Wrong! *${word.original}* = ${word.translation}${contextMsg}\nYou chose: ${finalAnswer}`, options);
             }
             console.log(`[Interaction] ✅ Answer processed successfully.`);
 

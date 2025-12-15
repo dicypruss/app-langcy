@@ -44,4 +44,14 @@ describe('TaskFactory Core', () => {
     test('should throw error if not enough distractors', () => {
         expect(() => generateOptionsTask(mockTargetWord, [])).toThrow();
     });
+
+    test('should generate task for Native->Target direction', () => {
+        const task = generateOptionsTask(mockTargetWord, mockDistractors, 'native->target');
+
+        expect(task.question).toContain('Manzana'); // Should ask about Translation
+        expect(task.correctAnswer).toBe('Apple'); // Correct answer is Original
+        expect(task.options).toContain('Apple');
+        expect(task.options).toContain('Dog');
+        expect(task.meta.direction).toBe('native->target');
+    });
 });

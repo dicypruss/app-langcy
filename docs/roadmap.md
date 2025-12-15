@@ -40,20 +40,27 @@ The engine that schedules when a unit should be reviewed.
 
 ### Phase 2: Visual Learning & Context (Image Import)
 **Goal**: Allow users to create learning units from photos/images.
-- [ ] **Schema Updates**:
+- [x] **Schema Updates**:
     -   Split context: `context_native` and `context_target`.
     -   Update `words` table.
-- [ ] **Image Processing Flow**:
+- [x] **Image Processing Flow**:
     -   Handle photo messages.
     -   Busy Check: Reject if user has pending task.
-- [ ] **Smart Extraction (Gemini)**:
+- [x] **Smart Extraction (Gemini)**:
     -   Step 1: OCR/Analyze image content.
     -   Step 2: Extract preliminary units.
     -   Step 3: Check existence (Dedup against DB).
     -   Step 4: Finalize list (Contextualize duplicates).
-- [ ] **UI Updates**:
+- [x] **UI Updates**:
     -   Show `context_native` in task options.
-    -   Show `context_target` in answer result.
+    -   [x] Show `context_native` in Task Options.
+    -   [x] Show `context_target` in Answer Feedback.
+    -   [x] Approval Workflow (Review Scene).
+    -   [x] Highlight target word in context.
+- [x] **Multi-Algorithm SRS** (Speed Up / Slow Down):
+    -   Store state for multiple algorithms (`default`, `fast`, `slow`).
+    -   Recalculate all intervals on every answer.
+    -   UI to switch active mode.
 
 ### Phase 3: Audio & UI Polish
 **Goal**: Enhance the user experience with audio pronunciation and better layout.
@@ -124,6 +131,16 @@ The engine that schedules when a unit should be reviewed.
 > - gemini should give us the final list of the units (with contexts) to add considering that the same word could have different meanings in different contexts
 > - we should add these units to database
 > - also, at the moment we have a context sentence in target language only, but we need to save a context in native language as well
-> - let's name the fields: context_native and context_target
-> - when we show the option in telegram we should show the native context in the option text
-> - when we sending the result of the answer we should add the target context to the text
+>    - [ ] let's name the fields: context_native and context_target
+    - [ ] when we show the option in telegram we should show the native context in the option text
+    - [ ] when we sending the result of the answer we should add the target context to the text
+
+### Request #3 (2025-12-15)
+**Context**: "Speed Up / Slow Down" feature (Multi-Algorithm SRS).
+
+> - I want to have an option in the application to speed up when user have a lot of free time and slow down, when no free time.
+> - So, I want every learning unit to calc and store the next review time for several SRS algorightms.
+> - By default the application should be in default mode and we should send the units to learn considering the default intervals.
+> - If user want to speed up or slow down he can change the mode via tg menu
+> - If the mode is changed we starting to consider another intervals
+> - but after the user's answer all the next review datetimes are recalculated according to the corresponding algo's intervals

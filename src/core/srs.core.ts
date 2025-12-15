@@ -1,3 +1,5 @@
+import { SRSConfig } from './srs_configs';
+
 export interface SRSMeta {
     confidence: number; // 0-100
     streak: number;
@@ -9,40 +11,44 @@ export interface SRSResult extends SRSMeta {
 }
 
 /**
- * Calculates the next review time based on correctness.
- * Inspired by simplified SM-2 but using minutes/hours for granularity.
+ * Calculates the next review time based on correctness and a specific algorithm config.
+ * @param failureMode Required failure mode ('reset', 'regress', etc.)
  */
-export function calculateNextReview(current: SRSMeta, isCorrect: boolean, testMode: boolean = false): SRSResult {
+export function calculateNextReview(current: SRSMeta, isCorrect: boolean, config: SRSConfig, failureMode: string = 'reset'): SRSResult {
     let { confidence, streak, interval } = current;
     const now = new Date();
 
     if (isCorrect) {
-        // Growth logic
-        streak += 1;
+        // ... (Growth logic unchanged)
+        streak = streak + 1;
         confidence = Math.min(100, confidence + 10);
 
-        if (testMode) {
-            // Rapid intervals for testing (integers to satisfy DB)
-            if (streak === 1) interval = 1; // 1 minute
-            else if (streak === 2) interval = 2; // 2 minutes
-            else interval = Math.ceil(interval * 1.5);
+        if (streak <= config.initialIntervals.length) {
+            interval = config.initialIntervals[streak - 1];
         } else {
-            // Normal Logic
-            if (streak === 1) {
-                interval = 60; // 1 hour for first successful review
-            } else if (streak === 2) {
-                interval = 60 * 12; // 12 hours
-            } else {
-                // Exponential growth: ~2.5 multiplier
-                interval = Math.ceil(interval * 2.5);
-            }
+            interval = Math.ceil(interval * config.multiplier);
         }
 
     } else {
-        // Penalty logic
+        // Answer is Wrong
         confidence = Math.max(0, confidence - 20);
-        streak = 0;
-        interval = testMode ? 0 : 10; // Reset to 0m (test) or 10m (prod)
+
+        // Failure Logic based on User Preference
+        if (failureMode === 'regress') {
+            streak = Math.max(0, streak - 1);
+        } else {
+            streak = 0;
+        }
+
+        // Recalculate Interval based on NEW streak
+        if (streak === 0) {
+            interval = config.initialIntervals[0];
+        } else if (streak <= config.initialIntervals.length) {
+            interval = config.initialIntervals[streak - 1];
+        } else {
+            // Fallback: If regressed but still above initials, use last initial interval.
+            interval = config.initialIntervals[config.initialIntervals.length - 1];
+        }
     }
 
     const nextReviewAt = new Date(now.getTime() + interval * 60000);

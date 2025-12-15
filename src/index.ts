@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { Telegraf, Scenes, session } from 'telegraf';
 import { onboardingScene } from './shell/scenes/onboarding';
+import { photoWizard } from './shell/scenes/photo_wizard';
 import { runMigrations } from './shell/migrator';
 
 import { config } from './config';
@@ -11,7 +12,7 @@ if (!token) {
 }
 
 const bot = new Telegraf<Scenes.WizardContext>(token);
-const stage = new Scenes.Stage<Scenes.WizardContext>([onboardingScene]);
+const stage = new Scenes.Stage<Scenes.WizardContext>([onboardingScene, photoWizard]);
 
 bot.use(session());
 bot.use(stage.middleware());
@@ -32,8 +33,19 @@ bot.action(/^ans:(\d+):(.+)$/, async (ctx) => {
 });
 
 
+import { VisualLearningService } from './shell/services/visual_learning.service';
+
+bot.on('photo', async (ctx) => {
+    // await VisualLearningService.processImage(ctx); // Legacy
+    await ctx.scene.enter('photo-wizard');
+});
+
 bot.start((ctx) => ctx.scene.enter('onboarding-wizard'));
 bot.help((ctx) => ctx.reply('Send /start to begin onboarding.'));
+
+import { SettingsUI } from './shell/settings.ui';
+bot.command('settings', SettingsUI.showSettings);
+bot.action(/^settings:(.+)$/, SettingsUI.onCallback);
 
 import { SchedulerService } from './shell/scheduler';
 

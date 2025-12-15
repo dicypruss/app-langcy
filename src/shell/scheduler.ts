@@ -66,7 +66,11 @@ export class SchedulerService {
                 }
 
                 const distractors = await UserProgressService.getDistractors(targetWord.id);
-                const task = generateOptionsTask(targetWord, distractors);
+
+                // Use stored direction (defaults to target->native if missing)
+                // @ts-ignore - direction added to getDueItems return type
+                const direction = item.direction || 'target->native';
+                const task = generateOptionsTask(targetWord, distractors, direction);
 
                 // 4. Send Task
                 try {
@@ -74,7 +78,10 @@ export class SchedulerService {
                     // Lock state immediately (and save options options)
                     await StateService.set(userId, {
                         isBusy: true,
-                        options: task.options
+                        options: {
+                            items: task.options,
+                            direction: task.meta.direction
+                        }
                     });
                     busyUsersCache.add(userId); // Mark locally as busy to skip other items in this batch
                     console.log(`[Scheduler] 🔒 Locking user DB:${userId} (waiting for answer)`);
@@ -107,9 +114,7 @@ export class SchedulerService {
                         const nextDay = new Date();
                         nextDay.setDate(nextDay.getDate() + 1);
 
-                        await UserProgressService.updateProgress(userId, targetWord.id, 'word', {
-                            nextReviewAt: nextDay
-                        });
+                        await UserProgressService.forceReschedule(userId, targetWord.id, 'word', 'target->native', nextDay);
                     } else {
                         console.error(`[Scheduler] 🤕 Non-fatal error for user ${userId}. Continuing.`);
                     }
@@ -128,11 +133,13 @@ export class SchedulerService {
         );
 
         // Send
-        return await this.bot.telegram.sendMessage(userId, task.question, Markup.inlineKeyboard(
-            // Chunk into rows of 2
-            // Chunk into rows of 1 (Vertical layout)
-            buttons.map((btn: any) => [btn])
-        ));
+        return await this.bot.telegram.sendMessage(userId, task.question, {
+            parse_mode: 'Markdown',
+            ...Markup.inlineKeyboard(
+                // Chunk into rows of 1 (Vertical layout)
+                buttons.map((btn: any) => [btn])
+            )
+        });
     }
 
     async checkTimeouts() {

@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 export interface TaskState {
     isBusy?: boolean;
-    options?: string[];
+    options?: any;
     messageId?: number;
     chatId?: number;
 }

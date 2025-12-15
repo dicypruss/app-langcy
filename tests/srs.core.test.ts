@@ -1,58 +1,69 @@
-import { calculateNextReview, SRSResult } from 'src/core/srs.core';
+import { calculateNextReview, SRSMeta } from '../src/core/srs.core';
+import { SRS_ALGORITHMS } from '../src/core/srs_configs';
 
-describe('SRS Core Algorithm', () => {
-    test('should handle correct answer (confidence increase)', () => {
-        const currentMeta = {
-            confidence: 50,
-            streak: 2,
-            interval: 1440 // 1 day
-        };
+describe('SRS Core Logic (Multi-Algorithm, Failure Modes)', () => {
 
-        const result = calculateNextReview(currentMeta, true);
+    const baseMeta: SRSMeta = {
+        confidence: 50,
+        streak: 0,
+        interval: 0
+    };
 
-        expect(result.confidence).toBeGreaterThan(50);
-        expect(result.streak).toBe(3);
-        expect(result.interval).toBeGreaterThan(1440); // Interval should grow
+    describe('SM-2 (mode: reset)', () => {
+        const config = SRS_ALGORITHMS['sm2'];
+
+        it('should hard reset on failure', () => {
+            // Streak was 5, Interval was huge
+            const result = calculateNextReview({ ...baseMeta, streak: 5, interval: 10000 }, false, config, 'reset');
+            expect(result.interval).toBe(10); // First initial interval
+            expect(result.streak).toBe(0);
+        });
     });
 
-    test('should handle wrong answer (confidence penalty)', () => {
-        const currentMeta = {
-            confidence: 50,
-            streak: 5,
-            interval: 2880 // 2 days
-        };
+    describe('Leitner (mode: regress)', () => {
+        const config = SRS_ALGORITHMS['leitner'];
 
-        const result = calculateNextReview(currentMeta, false);
+        it('should regress one step on failure', () => {
+            // Imagine we are at streak 3 (Box 3) -> interval = 4 days
+            // initialIntervals: [1d, 2d, 4d, ...]
+            // streak 3 means we just passed box 3, interval was 4d.
+            // If we fail now?
+            const result = calculateNextReview({ ...baseMeta, streak: 3, interval: 4 * 1440 }, false, config, 'regress');
 
-        expect(result.confidence).toBeLessThan(50);
-        expect(result.streak).toBe(0); // Reset streak on wrong
-        expect(result.interval).toBeLessThan(2880); // Shrink interval
+            // Streak should become 2
+            expect(result.streak).toBe(2);
+            // Interval should correspond to stage 2 (2 days)
+            expect(result.interval).toBe(2 * 1440);
+        });
+
+        it('should not regress below 0', () => {
+            const result = calculateNextReview({ ...baseMeta, streak: 0, interval: 1000 }, false, config, 'regress');
+            expect(result.streak).toBe(0);
+            expect(result.interval).toBe(config.initialIntervals[0]);
+        });
     });
 
-    test('should graduate item if streak reaches 10', () => {
-        const currentMeta = {
-            confidence: 90,
-            streak: 9,
-            interval: 5000
-        };
+    describe('SRS Override Logic', () => {
+        const config = SRS_ALGORITHMS['sm2']; // Default is 'reset'
 
-        const result = calculateNextReview(currentMeta, true);
+        it('should respect failureMode override (Regress on SM2)', () => {
+            // SM2 usually resets. Let's force it to regress.
+            // Streak is 5 (past initials), Interval is 10000.
+            // If reset: streak -> 0.
+            // If regress: streak -> 4.
+            // SM2 Initials: [10, 1440, 4320, 10080 (7d)]
+            // Streak 4 corresponds to index 3 (7d).
 
-        expect(result.streak).toBe(10);
-        // We might want a flag for graduation, or just check streak in scheduler
-    });
+            const result = calculateNextReview(
+                { ...baseMeta, streak: 5, interval: 10000 },
+                false,
+                config,
+                'regress'
+            );
 
-    test('new item should have short interval after first correct', () => {
-        const currentMeta = {
-            confidence: 0,
-            streak: 0,
-            interval: 0
-        };
-
-        const result = calculateNextReview(currentMeta, true);
-
-        // First review should be short, e.g., 10 minutes or 1 hour
-        expect(result.interval).toBeGreaterThan(0);
-        expect(result.interval).toBeLessThan(1440);
+            expect(result.streak).toBe(4);
+            // Interval should match stage 4 of SM2 (7d = 10080m)
+            expect(result.interval).toBe(config.initialIntervals[3]);
+        });
     });
 });

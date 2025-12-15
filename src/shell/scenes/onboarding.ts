@@ -103,18 +103,33 @@ export const onboardingScene = new Scenes.WizardScene<Scenes.WizardContext>(
 
             if (wordsError) throw new Error(`Supabase Words Error: ${wordsError.message}`);
 
-            // 4. Initialize User Progress (SRS)
+            // 4. Initialize User Progress (SRS) - Double Entry System
             if (insertedWords && insertedWords.length > 0) {
-                const progressToInsert = insertedWords.map(w => ({
-                    user_id: user.id,
-                    word_id: w.id, // Explicitly set word_id for exclusive arc
-                    // unit_id: w.id, removed
-                    // unit_type: 'word', removed (not in table anymore if we dropped it? wait, migration kept unit_type but added check?)
-                    confidence: 0,
-                    streak: 0,
-                    interval: 0,
-                    next_review_at: new Date().toISOString() // Due immediately
-                }));
+                const progressToInsert: any[] = [];
+
+                insertedWords.forEach(w => {
+                    // Entry 1: Target -> Native
+                    progressToInsert.push({
+                        user_id: user.id,
+                        word_id: w.id,
+                        confidence: 0,
+                        streak: 0,
+                        interval: 0,
+                        next_review_at: new Date().toISOString(),
+                        direction: 'target->native'
+                    });
+
+                    // Entry 2: Native -> Target
+                    progressToInsert.push({
+                        user_id: user.id,
+                        word_id: w.id,
+                        confidence: 0,
+                        streak: 0,
+                        interval: 0,
+                        next_review_at: new Date().toISOString(),
+                        direction: 'native->target'
+                    });
+                });
 
                 const { error: progressError } = await supabase
                     .from('user_progress')

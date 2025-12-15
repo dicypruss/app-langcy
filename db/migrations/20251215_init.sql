@@ -8,6 +8,8 @@ create table if not exists users (
   telegram_id bigint unique not null,
   native_lang text not null,
   target_lang text not null,
+  active_srs_mode text default 'sm2', -- 'sm2', 'pimsleur', 'fsrs', etc.
+  active_failure_mode text default 'reset', -- 'reset' (default) or 'regress'.
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 alter table users enable row level security;
@@ -26,7 +28,8 @@ create table if not exists words (
 alter table words enable row level security;
 
 -- Unique index to prevent duplicates (case-insensitive) per user
-create unique index if not exists idx_words_user_original on words (user_id, lower(original));
+-- Unique index to prevent exact duplicates (original + context) per user
+create unique index if not exists idx_words_user_original_context on words (user_id, lower(original), lower(context_target));
 
 -- 3. User Progress Table (SRS)
 create table if not exists user_progress (
@@ -42,7 +45,14 @@ create table if not exists user_progress (
   next_review_at timestamp with time zone default now() not null,
   interval integer default 0, -- minutes
   confidence integer default 0, -- 0-100
+
   streak integer default 0,
+
+  -- Multi-Algo State Storage
+  srs_states jsonb default '{}'::jsonb, -- Stores state for ALL modes: {"sm2": {...}, "pimsleur": {...}}
+
+  -- Direction Tracking (New for Bi-Directional SRS)
+  direction text default 'target->native', -- 'target->native' or 'native->target'
   
   created_at timestamp with time zone default now() not null,
   updated_at timestamp with time zone default now() not null,
@@ -50,10 +60,10 @@ create table if not exists user_progress (
   -- Ensure exactly one unit type is associated
   constraint chk_one_unit_type check (num_nonnulls(word_id, phrase_id, dialog_id) = 1),
   
-  -- Initial unique constraint (can be partial indexes in future if needed)
-  unique(user_id, word_id),
-  unique(user_id, phrase_id),
-  unique(user_id, dialog_id)
+  -- Unique constraint per direction
+  unique(user_id, word_id, direction),
+  unique(user_id, phrase_id, direction),
+  unique(user_id, dialog_id, direction)
 );
 create index idx_user_progress_scheduler on user_progress(user_id, next_review_at);
 
@@ -79,6 +89,7 @@ select
     up.interval,
     up.confidence,
     up.streak,
+    up.direction,
     w.original as word_original,
     w.translation as word_translation,
     w.context_target as word_context_target,
@@ -88,3 +99,35 @@ from user_progress up
 join words w on up.word_id = w.id
 join users u on up.user_id = u.id
 where up.next_review_at <= now();
+-- Migration: 20251216_switch_mode_rpc
+-- Description: RPC function to efficiently switch SRS modes for a user.
+
+create or replace function switch_user_srs_mode(p_user_id bigint, p_new_mode text)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  -- Update all user_progress rows for this user
+  update user_progress
+  set 
+    -- 1. Update Flat Columns from JSONB (or defaults if missing)
+    -- srs_states is { "mode": { "interval": ... } }
+    
+    interval = coalesce((srs_states->p_new_mode->>'interval')::int, 0),
+    confidence = coalesce((srs_states->p_new_mode->>'confidence')::int, 0),
+    streak = coalesce((srs_states->p_new_mode->>'streak')::int, 0),
+    
+    -- Check if next_review_at exists in state. If so, use it. Else, default to Now.
+    next_review_at = case 
+        when srs_states->p_new_mode->>'next_review_at' is not null 
+        then (srs_states->p_new_mode->>'next_review_at')::timestamptz
+        else now()
+    end,
+
+    -- Update metadata
+    updated_at = now()
+    
+  where user_id = p_user_id;
+end;
+$$;

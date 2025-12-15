@@ -24,7 +24,7 @@ export function validateLanguage(input: string): boolean {
  * @param targetLang Language user wants to learn
  */
 export function generateWordListPrompt(nativeLang: string, targetLang: string): OnboardingGenerationData {
-    const prompt = `Generate a list of the 100 most popular words in ${targetLang} for a ${nativeLang} speaker.`;
+    const prompt = `Generate a list of the 100 most popular words (nouns, verbs, adjectives, prepositions) in ${targetLang} for a ${nativeLang} speaker. Exclude definite/indefinite articles (e.g. 'the', 'a').`;
 
     const schema = {
         type: SchemaType.ARRAY,

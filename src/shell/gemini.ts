@@ -31,5 +31,46 @@ export const GeminiService = {
 
         const responseText = result.response.text();
         return parseGeminiResponse(responseText);
+    },
+    /**
+     * Analyzes an image to extract words.
+     */
+    async analyzeImage(prompt: string, schema: any, imageBuffer: Buffer, mimeType: string = 'image/jpeg'): Promise<WordEntry[]> {
+        const result = await model.generateContent({
+            contents: [{
+                role: 'user',
+                parts: [
+                    { text: prompt },
+                    {
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: imageBuffer.toString('base64')
+                        }
+                    }
+                ]
+            }],
+            generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: schema
+            },
+        });
+
+        const responseText = result.response.text();
+        return parseGeminiResponse(responseText);
+    },
+    /**
+     * Refines the list of extracted words by checking against existing context.
+     */
+    async refineAnalysis(prompt: string, schema: any): Promise<WordEntry[]> {
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: schema
+            },
+        });
+
+        const responseText = result.response.text();
+        return parseGeminiResponse(responseText);
     }
 };
