@@ -5,10 +5,26 @@
 - **Changelog**: Move finished tasks (that aren't related to the current active task) to `changelog.md`.
 
 ## Current Focus
-- Planning Phase 2: Content Expansion (Phrases & Dialogs)
+- Phase 2: Visual Learning & Context
 
 ## Upcoming Tasks
-- [ ] **Phase 2: Content Expansion** (See `roadmap.md`)
+- [ ] **Phase 2: Visual Learning & Context** (Image Import)
+    - [ ] **Schema Updates**:
+        - [ ] Add `context_native` column to `words` table.
+        - [ ] Rename/Alias `context_sentence` to `context_target`.
+    - [ ] **Image Processing Flow**:
+        - [ ] Handle photo messages in `index.ts`.
+        - [ ] Busy Check: Reject/Warn if user has pending task.
+        - [ ] Lock user state (Processing Image).
+    - [ ] **Smart Extraction (Gemini)**:
+        - [ ] OCR/Analyze image content.
+        - [ ] Extract preliminary learning units.
+        - [ ] Dedup Logic: Check against DB, refine list if duplicates exist.
+        - [ ] Finalize list with bilingual contexts.
+    - [ ] **UI Updates**:
+        - [ ] Show `context_native` in Task Options.
+        - [ ] Show `context_target` in Answer Feedback.
+- [ ] **Phase 3: Audio & UI Polish** (See `roadmap.md`)
 
 ## Production Readiness (Technical Debt)
 The current implementation is an MVP. The following items must be addressed before production use at scale:

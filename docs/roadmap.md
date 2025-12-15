@@ -38,25 +38,45 @@ The engine that schedules when a unit should be reviewed.
     - SRS Scheduler with "One Task" locking & persistence.
     - Interaction flow with feedback & graduation.
 
-### Phase 2: Content Expansion (Phrases & Dialogs)
+### Phase 2: Visual Learning & Context (Image Import)
+**Goal**: Allow users to create learning units from photos/images.
+- [ ] **Schema Updates**:
+    -   Split context: `context_native` and `context_target`.
+    -   Update `words` table.
+- [ ] **Image Processing Flow**:
+    -   Handle photo messages.
+    -   Busy Check: Reject if user has pending task.
+- [ ] **Smart Extraction (Gemini)**:
+    -   Step 1: OCR/Analyze image content.
+    -   Step 2: Extract preliminary units.
+    -   Step 3: Check existence (Dedup against DB).
+    -   Step 4: Finalize list (Contextualize duplicates).
+- [ ] **UI Updates**:
+    -   Show `context_native` in task options.
+    -   Show `context_target` in answer result.
+
+### Phase 3: Audio & UI Polish
+**Goal**: Enhance the user experience with audio pronunciation and better layout.
+- [ ] **Audio Generation**:
+    -   Use Gemini (or TTS provider) to generate audio for words.
+    -   Schema: Add `audio_url` or `audio_file_id` to `words` table.
+    -   Lazy Generation: Generate on-the-fly when sending task if missing.
+- [ ] **UI Improvements**:
+    -   Change inline keyboard layout to **1 column** (vertical) for better readability.
+
+### Phase 4: Content Expansion (Phrases & Dialogs)
 **Goal**: Add "Set Phrases" and "Dialogs" unit types.
 - [ ] **Schema**: Create `phrases` and `dialogs` tables.
-- [ ] **Content Generation**: Update Gemini prompts to generate these specific types.
-- [ ] **Task Engine (New Types)**:
-    -   **Phrases**:
-        -   "Fill the gap" (remove key words).
-        -   "Choose the right answer" (meaning selection).
-    -   **Dialogs**:
-        -   "Fill the gap" (complete the conversation).
-        -   "Fix the order" (rearrange lines - Future).
+- [ ] **Content Generation**: Update Gemini prompts.
+- [ ] **Task Engine (New Types)**: Phrases & Dialogs tasks.
 
-### Phase 3: Advanced Features
+### Phase 5: Advanced Features
 - [ ] **Manual Review**: Functionality to review "Learned" units on demand.
 - [ ] **Custom Settings**: User-level configuration for SRS intervals.
 
-### Phase 4: Scaling & Reliability
-- [ ] **Scalability**: Move from `setInterval` to a job queue (BullMQ) when user base grows >1k.
-- [ ] **Error Handling**: Integrate centralized logging (Sentry) when creating a stable prod release.
+### Phase 6: Scaling & Reliability
+- [ ] **Scalability**: Move from `setInterval` to a job queue (BullMQ).
+- [ ] **Error Handling**: Integrate centralized logging (Sentry).
 
 ---
 
@@ -86,4 +106,24 @@ The engine that schedules when a unit should be reviewed.
 > - lower confidence units should be repeated earlier, and higher confidence ones should be postponed
 > - if some unit is answered correctly 10 times in a row we consider it as remembered and should stop generating the tasks for it
 > - later we should add a manual remember functionality that will suggest the tasks for such remembered units
-> - spaced repetition settings should be customizable globally and on user level later (for now just hardcoded ones)
+### Request #2 (2025-12-15)
+**Context**: New priorities for Audio, UI, and Image-based Learning.
+
+> - I want bot to create a voice audio using gemini api when sending a word (if doesn't exist yet)
+> - this audio should be saved in database if doesn't exist yet
+> - I want the options to answer to be shown in 1 column
+>
+> And after this should be another phase with these features:
+> - use should be able to send some image with the words in the target language
+> - if the user is busy at this moment bot should just send a message that need to answer the last question first
+> - if the user is not busy bot should mark him busy and start the process of creating the learning materials from provided image
+> - first the bot should send the image to gemini api to analyze the content and check if it's possible to create the learning materials from this image
+> - gemini api should convert the image to text (with some context) and extract the learning units (words for now and phrases later) from the provided material
+> - for every unit gemini extracted we should check if this unit already exists for this user
+> - we should make a list of existed units with their contexts and ask gemini one more time to analyze the units considering the existed ones
+> - gemini should give us the final list of the units (with contexts) to add considering that the same word could have different meanings in different contexts
+> - we should add these units to database
+> - also, at the moment we have a context sentence in target language only, but we need to save a context in native language as well
+> - let's name the fields: context_native and context_target
+> - when we show the option in telegram we should show the native context in the option text
+> - when we sending the result of the answer we should add the target context to the text
