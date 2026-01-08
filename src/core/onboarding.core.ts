@@ -1,4 +1,4 @@
-import { SchemaType } from '@google/generative-ai';
+import { SchemaType } from './content.core';
 
 // Define the shape of the generation request
 export interface OnboardingGenerationData {
@@ -24,7 +24,7 @@ export function validateLanguage(input: string): boolean {
  * @param targetLang Language user wants to learn
  */
 export function generateWordListPrompt(nativeLang: string, targetLang: string): OnboardingGenerationData {
-    const prompt = `Generate a list of the 100 most popular words (nouns, verbs, adjectives, prepositions) in ${targetLang} for a ${nativeLang} speaker. Exclude definite/indefinite articles (e.g. 'the', 'a').`;
+    const prompt = `Generate a list of the 20 most popular words (nouns, verbs, adjectives, prepositions) in ${targetLang} for a ${nativeLang} speaker. Exclude definite/indefinite articles (e.g. 'the', 'a').`;
 
     const schema = {
         type: SchemaType.ARRAY,

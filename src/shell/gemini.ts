@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { generateWordListPrompt } from '../core/onboarding.core';
 import { config } from '../config';
 import { parseGeminiResponse, WordEntry } from '../core/content.core';
@@ -9,10 +9,8 @@ if (!apiKey) {
     throw new Error('Missing GEMINI_API_KEY environment variable');
 }
 
-const genAI = new GoogleGenerativeAI(config.geminiKey);
-const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
-});
+// New SDK Initialization
+const genAI = new GoogleGenAI({ apiKey });
 
 export const GeminiService = {
     /**
@@ -21,24 +19,26 @@ export const GeminiService = {
     async generateInitialWords(nativeLang: string, targetLang: string): Promise<WordEntry[]> {
         const { prompt, schema } = generateWordListPrompt(nativeLang, targetLang);
 
-        const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
+        const result = await genAI.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ parts: [{ text: prompt }] }],
+            config: {
                 responseMimeType: 'application/json',
                 responseSchema: schema
-            },
+            }
         });
 
-        const responseText = result.response.text();
+        const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!responseText) throw new Error('Empty response from Gemini');
         return parseGeminiResponse(responseText);
     },
     /**
      * Analyzes an image to extract words.
      */
     async analyzeImage(prompt: string, schema: any, imageBuffer: Buffer, mimeType: string = 'image/jpeg'): Promise<WordEntry[]> {
-        const result = await model.generateContent({
+        const result = await genAI.models.generateContent({
+            model: 'gemini-2.5-flash',
             contents: [{
-                role: 'user',
                 parts: [
                     { text: prompt },
                     {
@@ -49,28 +49,31 @@ export const GeminiService = {
                     }
                 ]
             }],
-            generationConfig: {
+            config: {
                 responseMimeType: 'application/json',
                 responseSchema: schema
-            },
+            }
         });
 
-        const responseText = result.response.text();
+        const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!responseText) throw new Error('Empty response from Gemini');
         return parseGeminiResponse(responseText);
     },
     /**
      * Refines the list of extracted words by checking against existing context.
      */
     async refineAnalysis(prompt: string, schema: any): Promise<WordEntry[]> {
-        const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
+        const result = await genAI.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ parts: [{ text: prompt }] }],
+            config: {
                 responseMimeType: 'application/json',
                 responseSchema: schema
-            },
+            }
         });
 
-        const responseText = result.response.text();
+        const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!responseText) throw new Error('Empty response from Gemini');
         return parseGeminiResponse(responseText);
     }
 };

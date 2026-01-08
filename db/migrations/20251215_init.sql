@@ -10,6 +10,7 @@ create table if not exists users (
   target_lang text not null,
   active_srs_mode text default 'sm2', -- 'sm2', 'pimsleur', 'fsrs', etc.
   active_failure_mode text default 'reset', -- 'reset' (default) or 'regress'.
+  voice_id text default 'Kore', -- New for Voice Selection
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 alter table users enable row level security;
@@ -22,6 +23,7 @@ create table if not exists words (
   translation text not null,
   context_target text, -- Renamed from context_sentence
   context_native text, -- New for Visual Learning
+  audio_file_id text, -- New for Phase 3 (Audio)
   status text default 'new', -- 'new', 'learning', 'learned'
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -94,7 +96,10 @@ select
     w.translation as word_translation,
     w.context_target as word_context_target,
     w.context_native as word_context_native,
-    u.telegram_id as user_telegram_id
+    w.audio_file_id as word_audio_file_id,
+    u.target_lang,
+    u.telegram_id as user_telegram_id,
+    u.voice_id
 from user_progress up
 join words w on up.word_id = w.id
 join users u on up.user_id = u.id

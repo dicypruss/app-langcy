@@ -2,6 +2,21 @@
 
 ## 2025-12-15
 
+### Phase 3: Audio & UI Polish
+- [x] **Audio System**:
+    - **Native Gemini TTS**: Replaced Google TTS with Gemini 2.5 (`gemini-2.5-flash-preview-tts`).
+    - **Smart Audio Direction**:
+        - Target->Native: Audio (Target) -> User -> Answer (Native). (Audio as "Question").
+        - Native->Target: User -> Answer (Target) -> Audio Feedback (Target).
+    - **Voice Selection**: User can switch voices (Kore/Fenrir) via settings.
+    - **Optimized Delivery**: Direct buffer streaming to Telegram (no temp files).
+- [x] **UI Polish**:
+    - **Settings Menu**: manage SRS Algo, Failure Penalty, and Voice.
+    - **Vertical Layout**: Stacked buttons for quiz options.
+- [x] **Technical**:
+    - Consolidated migrations into `init.sql`.
+    - Upgraded to `@google/genai` (v0.24+).
+
 ### Phase 2: Visual Learning & Context (Image Import)
 - [x] **New Features**:
     - **Visual Learning**: Users can send photos to generate word cards.

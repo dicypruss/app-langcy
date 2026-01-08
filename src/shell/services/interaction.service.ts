@@ -5,6 +5,7 @@ import { UserProgressService } from './user_progress.service';
 import { StateService } from '../state';
 import { config } from '../../config';
 import { highlightTargetInContext } from '../../utils/string.utils';
+import { AudioService } from './audio.service';
 
 export class InteractionService {
 
@@ -96,10 +97,10 @@ export class InteractionService {
 
         // Wrap in try-finally to ensure lock is released
         try {
-            // 2b. Fetch User SRS Settings (Active Mode + Failure Mode)
+            // 2b. Fetch User SRS Settings (Active Mode + Failure Mode + Voice + Lang)
             const { data: userSettings, error: userSettingsError } = await supabase
                 .from('users')
-                .select('active_srs_mode, active_failure_mode')
+                .select('active_srs_mode, active_failure_mode, voice_id, target_lang')
                 .eq('id', userId)
                 .single();
 
@@ -107,6 +108,8 @@ export class InteractionService {
             let activeMode = userSettings?.active_srs_mode || 'sm2';
             // If active_failure_mode is NULL/Undefined, default to 'reset' (Global Default)
             const failureMode = userSettings?.active_failure_mode || 'reset';
+            const voiceId = userSettings?.voice_id || 'Kore';
+            const targetLang = userSettings?.target_lang || 'en';
 
             const isTestMode = config.isTestMode;
             if (isTestMode) {
@@ -128,6 +131,26 @@ export class InteractionService {
             if (isCorrectCheck) {
                 let msg = `✅ Correct! *${word.original}* = ${word.translation}${contextMsg}\nYou chose: ${finalAnswer}`;
                 await ctx.editMessageText(msg, options);
+
+                // Audio Logic: If direction is native->target, play audio AFTER success
+                if (direction === 'native->target') {
+                    try {
+                        // Reuse existing audio file ID if available to save generation
+                        if (word.audio_file_id) {
+                            await ctx.replyWithVoice(word.audio_file_id);
+                        } else {
+                            const buffer = await AudioService.getAudio(word.original, targetLang, voiceId);
+                            const sentVoice = await ctx.replyWithVoice({ source: buffer, filename: 'audio.wav' });
+
+                            // Cache the new file ID
+                            if (sentVoice.voice.file_id) {
+                                await supabase.from('words').update({ audio_file_id: sentVoice.voice.file_id }).eq('id', wordId);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('[Interaction] Failed to send audio feedback:', e);
+                    }
+                }
             } else {
                 await ctx.editMessageText(`❌ Wrong! *${word.original}* = ${word.translation}${contextMsg}\nYou chose: ${finalAnswer}`, options);
             }

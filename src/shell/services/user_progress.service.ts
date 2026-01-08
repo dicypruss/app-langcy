@@ -76,6 +76,7 @@ export class UserProgressService {
             confidence: row.confidence,
             streak: row.streak,
             direction: row.direction,
+            target_lang: row.target_lang,
 
             // Nested objects Reconstructed
             word: {
@@ -83,7 +84,8 @@ export class UserProgressService {
                 original: row.word_original,
                 translation: row.word_translation,
                 context_target: row.word_context_target,
-                context_native: row.word_context_native
+                context_native: row.word_context_native,
+                audio_file_id: row.word_audio_file_id
             },
             telegram_user: {
                 id: row.user_id,

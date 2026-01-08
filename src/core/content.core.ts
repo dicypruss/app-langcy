@@ -1,3 +1,13 @@
+// Enum for Gemini Schema Types (mirroring legacy SDK for compatibility)
+export enum SchemaType {
+    STRING = "STRING",
+    NUMBER = "NUMBER",
+    INTEGER = "INTEGER",
+    BOOLEAN = "BOOLEAN",
+    ARRAY = "ARRAY",
+    OBJECT = "OBJECT"
+}
+
 export interface WordEntry {
     original: string;
     translation: string;

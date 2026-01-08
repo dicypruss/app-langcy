@@ -64,11 +64,12 @@ The engine that schedules when a unit should be reviewed.
 
 ### Phase 3: Audio & UI Polish
 **Goal**: Enhance the user experience with audio pronunciation and better layout.
-- [ ] **Audio Generation**:
+- [x] **Status**: **Complete** (See `changelog.md` for details)
+- [x] **Audio Generation**:
     -   Use Gemini (or TTS provider) to generate audio for words.
     -   Schema: Add `audio_url` or `audio_file_id` to `words` table.
     -   Lazy Generation: Generate on-the-fly when sending task if missing.
-- [ ] **UI Improvements**:
+- [x] **UI Improvements**:
     -   Change inline keyboard layout to **1 column** (vertical) for better readability.
 
 ### Phase 4: Content Expansion (Phrases & Dialogs)

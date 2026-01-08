@@ -61,4 +61,15 @@ export class SettingsService {
 
         if (error) throw error;
     }
+    /**
+     * Changes the user's active Voice (e.g. 'Kore' or 'Fenrir').
+     */
+    static async setVoice(userId: number, voice: string) {
+        const { error } = await supabase
+            .from('users')
+            .update({ voice_id: voice })
+            .eq('id', userId);
+
+        if (error) throw error;
+    }
 }

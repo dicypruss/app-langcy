@@ -12,7 +12,7 @@ export class SettingsUI {
         // Fetch user preferences
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, active_srs_mode, active_failure_mode')
+            .select('id, active_srs_mode, active_failure_mode, voice_id')
             .eq('telegram_id', telegramId.toString())
             .single();
 
@@ -22,18 +22,21 @@ export class SettingsUI {
 
         const srsMode = user.active_srs_mode || 'sm2';
         const failMode = user.active_failure_mode || 'reset';
+        const voiceId = user.voice_id || 'Kore';
 
         const srsConfig = SRS_ALGORITHMS[srsMode as SRSMode];
         const failLabel = failMode === 'reset' ? '💥 Hard Reset' : '📉 Soft Regress';
 
         const message = `⚙️ **Settings**\n\n` +
             `🧠 **SRS Algorithm**: ${srsConfig ? srsConfig.description : srsMode}\n` +
-            `💀 **Failure Penalty**: ${failLabel}\n\n` +
+            `💀 **Failure Penalty**: ${failLabel}\n` +
+            `🗣️ **Voice**: ${voiceId}\n\n` +
             `Select a setting to change:`;
 
         await ctx.replyWithMarkdown(message, Markup.inlineKeyboard([
             [Markup.button.callback('🧠 Change Algorithm', 'settings:menu:srs')],
             [Markup.button.callback('💀 Change Penalty', 'settings:menu:fail')],
+            [Markup.button.callback('🗣️ Change Voice', 'settings:menu:voice')],
             [Markup.button.callback('❌ Close', 'settings:close')]
         ]));
     }
@@ -90,24 +93,28 @@ export class SettingsUI {
             // Re-fetch latest state in case it changed
             const { data: u } = await supabase
                 .from('users')
-                .select('active_srs_mode, active_failure_mode')
+                .select('active_srs_mode, active_failure_mode, voice_id')
                 .eq('id', user.id)
                 .single();
 
             const srsMode = u?.active_srs_mode || 'sm2';
             const failMode = u?.active_failure_mode || 'reset';
+            const voiceId = u?.voice_id || 'Kore';
+
             const srsConfig = SRS_ALGORITHMS[srsMode as SRSMode];
             const failLabel = failMode === 'reset' ? '💥 Hard Reset' : '📉 Soft Regress';
 
             const message = `⚙️ **Settings**\n\n` +
                 `🧠 **SRS Algorithm**: ${srsConfig ? srsConfig.description : srsMode}\n` +
-                `💀 **Failure Penalty**: ${failLabel}\n\n` +
+                `💀 **Failure Penalty**: ${failLabel}\n` +
+                `🗣️ **Voice**: ${voiceId}\n\n` +
                 `Select a setting to change:`;
 
             await ctx.editMessageText(message, {
                 parse_mode: 'Markdown', ...Markup.inlineKeyboard([
                     [Markup.button.callback('🧠 Change Algorithm', 'settings:menu:srs')],
                     [Markup.button.callback('💀 Change Penalty', 'settings:menu:fail')],
+                    [Markup.button.callback('🗣️ Change Voice', 'settings:menu:voice')],
                     [Markup.button.callback('❌ Close', 'settings:close')]
                 ])
             });
@@ -126,6 +133,27 @@ export class SettingsUI {
             await SettingsService.setFailureMode(user.id, mode as 'reset' | 'regress');
             await ctx.answerCbQuery(`✅ Updated to ${mode}`);
             // Return to main
+            return SettingsUI.onCallback({ ...ctx, match: ['settings:main'] });
+        }
+        if (action === 'settings:menu:voice') {
+            await ctx.editMessageText('🗣️ **Select Voice**:\n\n' +
+                'Standard Voices (Gemini/Google):\n' +
+                '👩 **Kore** (Female, Clear)\n' +
+                '👨 **Fenrir** (Male, Deep)',
+                {
+                    parse_mode: 'Markdown', ...Markup.inlineKeyboard([
+                        [Markup.button.callback('👩 Kore', 'settings:set_voice:Kore')],
+                        [Markup.button.callback('👨 Fenrir', 'settings:set_voice:Fenrir')],
+                        [Markup.button.callback('🔙 Back', 'settings:main')]
+                    ])
+                }
+            );
+        }
+
+        if (action.startsWith('settings:set_voice:')) {
+            const voice = action.split(':')[2];
+            await SettingsService.setVoice(user.id, voice);
+            await ctx.answerCbQuery(`✅ Voice updated to ${voice}`);
             return SettingsUI.onCallback({ ...ctx, match: ['settings:main'] });
         }
     }

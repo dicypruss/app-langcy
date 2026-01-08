@@ -1,5 +1,5 @@
 import { generateImagePrompt, generateRefinementPrompt, deduplicateWords } from '../src/core/visual_learning.core';
-import { SchemaType } from '@google/generative-ai';
+import { SchemaType } from '../src/core/content.core';
 
 describe('Visual Learning Core', () => {
     describe('generateImagePrompt', () => {

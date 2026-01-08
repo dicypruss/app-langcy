@@ -3,6 +3,8 @@ import { UserProgressService } from './services/user_progress.service';
 import { generateOptionsTask } from '../core/task.factory';
 import { config } from '../config';
 import { StateService } from './state';
+import { supabase } from './supabase';
+import { AudioService } from './services/audio.service';
 
 
 export class SchedulerService {
@@ -86,7 +88,22 @@ export class SchedulerService {
                     busyUsersCache.add(userId); // Mark locally as busy to skip other items in this batch
                     console.log(`[Scheduler] 🔒 Locking user DB:${userId} (waiting for answer)`);
 
-                    const sentMsg = await this.sendTaskToUser(telegramId, task);
+
+
+                    // Audio: Only if direction is target->native (User hears Target, translates to Native)
+                    // If native->target (User reads Native, translates to Target), audio comes AFTER answer (in InteractionService)
+                    // @ts-ignore
+                    const shouldSendAudio = item.direction === 'target->native';
+
+                    const sentMsg = await this.sendTaskToUser(telegramId, task, shouldSendAudio ? {
+                        wordId: targetWord.id,
+                        text: targetWord.original,
+                        // @ts-ignore
+                        lang: item.target_lang || 'en',
+                        existingFileId: targetWord.audio_file_id,
+                        // @ts-ignore
+                        voice: item.voice_id || 'Kore'
+                    } : undefined);
 
                     // Update state with message ID for cleanup
                     await StateService.set(userId, {
@@ -125,14 +142,51 @@ export class SchedulerService {
         }
     }
 
-    async sendTaskToUser(userId: number, task: any) {
-        // Construct Inline Keyboard using INDICES (0, 1, 2, 3)
-        // Callback data: ans:{wordId}:{index}
+    async sendTaskToUser(userId: number, task: any, audioMeta?: { wordId: number, text: string, lang: string, existingFileId?: string, voice?: string }) {
+        // 1. Send Audio (if applicable)
+        if (audioMeta) {
+            try {
+                let fileIdToSend = audioMeta.existingFileId;
+
+                if (!fileIdToSend) {
+                    // Generate new
+                    console.log(`[Scheduler] 🎤 Generating audio for "${audioMeta.text}" (${audioMeta.lang})`);
+
+                    // Now returns a Buffer!
+                    const audioBuffer = await AudioService.getAudio(audioMeta.text, audioMeta.lang, audioMeta.voice);
+
+                    // Send Buffer to Telegram
+                    // Telegram accepts Buffer in `source`
+                    const voiceMsg = await this.bot.telegram.sendVoice(userId, {
+                        source: audioBuffer,
+                        filename: 'audio.wav'
+                    });
+
+                    // Cache the file_id
+                    const newFileId = voiceMsg.voice.file_id;
+                    if (newFileId) {
+                        console.log(`[Scheduler] 💾 Caching new audio_file_id: ${newFileId}`);
+                        await supabase
+                            .from('words')
+                            .update({ audio_file_id: newFileId })
+                            .eq('id', audioMeta.wordId);
+                    }
+                } else {
+                    // Reuse existing
+                    console.log(`[Scheduler] ♻️ Reusing audio_file_id: ${fileIdToSend}`);
+                    await this.bot.telegram.sendVoice(userId, fileIdToSend);
+                }
+            } catch (e) {
+                console.error('[Scheduler] ⚠️ Audio send failed:', e);
+                // Continue to send text task even if audio fails
+            }
+        }
+
+        // 2. Send Question
         const buttons = task.options.map((opt: string, index: number) =>
             Markup.button.callback(opt, `ans:${task.meta.wordId}:${index}`)
         );
 
-        // Send
         return await this.bot.telegram.sendMessage(userId, task.question, {
             parse_mode: 'Markdown',
             ...Markup.inlineKeyboard(

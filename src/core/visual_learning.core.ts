@@ -1,4 +1,4 @@
-import { SchemaType } from '@google/generative-ai';
+import { SchemaType } from './content.core';
 import { OnboardingGenerationData } from './onboarding.core';
 import { WordEntry } from './content.core';
 

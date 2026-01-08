@@ -1,5 +1,5 @@
 import { validateLanguage, generateWordListPrompt } from '../src/core/onboarding.core';
-import { SchemaType } from '@google/generative-ai';
+import { SchemaType } from '../src/core/content.core';
 
 describe('Onboarding Core', () => {
     describe('validateLanguage', () => {
@@ -22,7 +22,7 @@ describe('Onboarding Core', () => {
             const target = 'Spanish';
             const result = generateWordListPrompt(native, target);
 
-            expect(result.prompt).toContain('100 most popular words');
+            expect(result.prompt).toContain('20 most popular words');
             expect(result.schema).toBeDefined();
             expect(result.schema.type).toBe(SchemaType.ARRAY);
             expect(result.schema.items.properties.original).toBeDefined();
